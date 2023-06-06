@@ -60,6 +60,7 @@ from . import xwinograd
 from . import pawsx
 from . import xnli
 from . import mgsm
+from . import hendrycks_test_de
 
 ########################################
 # Translation tasks
@@ -190,6 +191,7 @@ TASK_REGISTRY = {
     #   e.g. anli, arithmetic, openai_translations, harness_translations
     # hendrycksTest (57 tasks)
     **hendrycks_test.create_all_tasks(),
+    **hendrycks_test_de.create_all_tasks(),
     # e.g. wmt14-fr-en
     **translation.create_tasks_from_benchmarks(gpt3_translation_benchmarks),
     # chef's selection, mostly wmt20
