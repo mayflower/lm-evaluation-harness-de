@@ -4,6 +4,9 @@ import logging
 import os
 
 from lm_eval import tasks, evaluator, utils
+import lm_eval.models
+import numpy as np
+import pandas as pd
 
 logging.getLogger("openai").setLevel(logging.WARNING)
 
@@ -17,7 +20,7 @@ def parse_args():
     parser.add_argument("--num_fewshot", type=int, default=0)
     parser.add_argument("--batch_size", type=str, default=None)
     parser.add_argument("--device", type=str, default=None)
-    parser.add_argument("--output_path", default=None)
+    parser.add_argument("--output_path", default="output.json")
     parser.add_argument("--limit", type=float, default=None,
                         help="Limit the number of examples per task. "
                              "If <1, limit is a percentage of the total number of examples.")
@@ -28,67 +31,78 @@ def parse_args():
     parser.add_argument("--check_integrity", action="store_true")
     parser.add_argument("--write_out", action="store_true", default=False)
     parser.add_argument("--output_base_path", type=str, default=None)
-    parser.add_argument("--do_english", action="store_true", default=False)
+    parser.add_argument("--csv_path", type=str, default="./results.csv")
 
     return parser.parse_args()
+
+tasks_per_fewshot = {
+    5: [
+        "hendrycksTest*",
+        "MMLU-DE*",
+    ],
+    10: [
+        "hellaswag",
+    ],
+    25: [
+        "arc_challenge",
+    ],
+    None: [
+        "truthfulqa",
+        "pawsx_de",
+        "xnli_de",
+        "lambada_openai_mt_de",
+        "wmt20-en-de",
+    ]
+}
 
 
 def main():
     args = parse_args()
-    if args.do_english:
-        task_names = [
-            "arc_challenge",
-            "hellaswag",
-            "truthfulqa",
-            "hendrycksTest*",
-        ]
-        num_fewshots = [
-            25,
-            10,
-            0,
-            5,
-        ]
-    else:
-        task_names = [
-            "MMLU-DE*",
-            "pawsx_de",
-            "xnli_de",
-            "lambada_openai_mt_de",
-            "wmt20-en-de",
-        ]
-        num_fewshots = [
-            5,
-            0,
-            0,
-            0,
-            0,
-        ]
-    task_names = utils.pattern_match(task_names, tasks.ALL_TASKS)
+    lm = lm_eval.models.get_model(args.model).create_from_arg_string(
+            args.model_args, {"batch_size": args.batch_size, "device": args.device}
+        )
+    all_results = {
+        "results": {},
+        "versions": {},
+    }
+    for num_fewshots, tasks in tasks_per_fewshot.items():
+        task_names = utils.pattern_match(tasks, tasks.ALL_TASKS)
+        results = evaluator.simple_evaluate(
+            model=lm,
+            model_args=None,
+            tasks=task_names,
+            num_fewshot=num_fewshots,
+            batch_size=args.batch_size,
+            device=args.device,
+            no_cache=args.no_cache,
+            limit=args.limit,
+            description_dict=None,
+            decontamination_ngrams_path=args.decontamination_ngrams_path,
+            check_integrity=args.check_integrity,
+            write_out=args.write_out,
+            output_base_path=args.output_base_path,
+            bootstrap_iters=500
+        )
+        all_results["results"].update(results["results"])
+        all_results["versions"].update(results["versions"])
+        all_results["config"] = results["config"]
 
-    print(f"Selected Tasks: {task_names}")
+    all_results["config"]["model"] = args.model
+    all_results["config"]["model_args"] = args.model_args
+    mmlu_de_mean = np.mean([v["acc"] for k, v in all_results["results"].items() if "MMLU-DE" in k])
+    mmlu_de_std_mean = np.mean([v["acc_stderr"] for k, v in all_results["results"].items() if "MMLU-DE" in k])
+    mmlu_en_mean = np.mean([v["acc"] for k, v in all_results["results"].items() if "hendrycksTest" in k])
+    mmlu_en_std_mean = np.mean([v["acc_stderr"] for k, v in all_results["results"].items() if "hendrycksTest" in k])
+    all_results["results"]["MMLU-DE"] = {
+        "acc": mmlu_de_mean,
+        "acc_stderr": mmlu_de_std_mean,
+    }
+    all_results["results"]["hendrycksTest"] = {
+        "acc": mmlu_en_mean,
+        "acc_stderr": mmlu_en_std_mean,
+    }
 
-    description_dict = {}
-    if args.description_dict_path:
-        with open(args.description_dict_path, "r") as f:
-            description_dict = json.load(f)
-
-    results = evaluator.simple_evaluate(
-        model=args.model,
-        model_args=args.model_args,
-        tasks=task_names,
-        num_fewshot=args.num_fewshot,
-        batch_size=args.batch_size,
-        device=args.device,
-        no_cache=args.no_cache,
-        limit=args.limit,
-        description_dict=description_dict,
-        decontamination_ngrams_path=args.decontamination_ngrams_path,
-        check_integrity=args.check_integrity,
-        write_out=args.write_out,
-        output_base_path=args.output_base_path,
-    )
-
-    dumped = json.dumps(results, indent=2)
+    dumped = json.dumps(all_results, indent=2)
     print(dumped)
 
     if args.output_path:
@@ -100,7 +114,24 @@ def main():
         f"{args.model} ({args.model_args}), limit: {args.limit}, provide_description: {args.provide_description}, "
         f"num_fewshot: {args.num_fewshot}, batch_size: {args.batch_size}"
     )
-    print(evaluator.make_table(results))
+    # remove subtasks from results
+    for k in list(all_results["results"].keys()):
+        if "MMLU-DE-" in k or "hendrycksTest-" in k:
+            del all_results["results"][k]
+    print(evaluator.make_table(all_results))
+
+    if os.path.exists(args.csv_path):
+        df = pd.read_csv(args.csv_path)
+    else:
+        columns = ["model", "model_args"] + list(all_results["results"].keys())
+        df = pd.DataFrame(columns=columns)
+    df = df.append({
+        "model": args.model,
+        "model_args": args.model_args,
+        **{k: v["acc"] for k, v in all_results["results"].items()}
+    }, ignore_index=True)
+    df.to_csv(args.csv_path, index=False)
+    
 
 
 if __name__ == "__main__":
