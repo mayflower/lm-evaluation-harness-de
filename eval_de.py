@@ -10,7 +10,7 @@ import pandas as pd
 
 logging.getLogger("openai").setLevel(logging.WARNING)
 
-
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
