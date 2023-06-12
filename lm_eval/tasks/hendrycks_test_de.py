@@ -137,7 +137,7 @@ class GeneralHendrycksTest(MultipleChoiceTask):
             D. <choice4>
             Answer:
             """
-            prompt = "Frage: " + doc["question_de"] + "\nAntwortmöglichkeiten:\n"
+            prompt = "Frage: " + doc["question_de"] + "\nOptionen:\n"
             prompt += "".join(
                 [f"{key}. {choice}\n" for key, choice in zip(keys, doc["choices_de"])]
             )

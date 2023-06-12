@@ -46,7 +46,7 @@ tasks_per_fewshot = {
     25: [
         "arc_challenge",
     ],
-    None: [
+    0: [
         "truthfulqa",
         "pawsx_de",
         "xnli_de",
@@ -59,14 +59,14 @@ tasks_per_fewshot = {
 def main():
     args = parse_args()
     lm = lm_eval.models.get_model(args.model).create_from_arg_string(
-            args.model_args, {"batch_size": args.batch_size, "device": args.device}
+            args.model_args, {"batch_size": args.batch_size, "device": args.device, "dtype": "float16"}
         )
     all_results = {
         "results": {},
         "versions": {},
     }
-    for num_fewshots, tasks in tasks_per_fewshot.items():
-        task_names = utils.pattern_match(tasks, tasks.ALL_TASKS)
+    for num_fewshots, task_list in tasks_per_fewshot.items():
+        task_names = utils.pattern_match(task_list, tasks.ALL_TASKS)
         results = evaluator.simple_evaluate(
             model=lm,
             model_args=None,
@@ -86,6 +86,11 @@ def main():
         all_results["results"].update(results["results"])
         all_results["versions"].update(results["versions"])
         all_results["config"] = results["config"]
+        dumped = json.dumps(all_results, indent=2)
+        print(dumped)
+        filename = f"output_{args.model}_{args.model_args}_{num_fewshots}shots.json"
+        with open(filename, "w") as f:
+            f.write(dumped)
 
     all_results["config"]["model"] = args.model
     all_results["config"]["model_args"] = args.model_args
@@ -131,7 +136,7 @@ def main():
         **{k: v["acc"] for k, v in all_results["results"].items()}
     }, ignore_index=True)
     df.to_csv(args.csv_path, index=False)
-    
+
 
 
 if __name__ == "__main__":
