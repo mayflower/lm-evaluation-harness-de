@@ -32,6 +32,7 @@ def parse_args():
     parser.add_argument("--write_out", action="store_true", default=False)
     parser.add_argument("--output_base_path", type=str, default=None)
     parser.add_argument("--csv_path", type=str, default="./results.csv")
+    parser.add_argument("--skip_fewshots", type=list, default=[])
 
     return parser.parse_args()
 
@@ -85,8 +86,8 @@ def main():
         all_results["config"] = results["config"]
         dumped = json.dumps(all_results, indent=2)
         print(dumped)
-        filename = f"output_{args.model}_{args.model_args}_{num_fewshots}shots.json"
-        with open(filename, "w") as f:
+        output_path = args.output_path.replace(".json", f"_{num_fewshots}shots.json")
+        with open(output_path, "w") as f:
             f.write(dumped)
 
     all_results["config"]["model"] = args.model
