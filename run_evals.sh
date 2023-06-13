@@ -1,9 +1,16 @@
 # arguments are a list of model names
 # example: ./run_evals.sh model1 model2 model3
+# if no arguments, then use default list of models
 
-models = "huggyllama/llama-7b bjoernp/trampeltier-7b huggyllama/llama-13b huggyllama/llama-30b togethercomputer/RedPajama-INCITE-7B-Base togethercomputer/RedPajama-INCITE-Base-3B-v1"
+if [ $# -eq 0 ]
+then
+    echo "No arguments supplied, using default list of models"
+    models="huggyllama/llama-7b bjoernp/trampeltier-7b huggyllama/llama-13b huggyllama/llama-30b togethercomputer/RedPajama-INCITE-7B-Base togethercomputer/RedPajama-INCITE-Base-3B-v1"
+else
+    models=$@
+fi
 
-for model in "$@"
+for model in $models;
 do
     # replace / with _ in model name
     model_escaped=${model//\//_}
