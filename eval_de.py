@@ -58,9 +58,6 @@ tasks_per_fewshot = {
 
 def main():
     args = parse_args()
-    lm = lm_eval.models.get_model(args.model).create_from_arg_string(
-            args.model_args, {"batch_size": args.batch_size, "device": args.device, "dtype": "float16"}
-        )
     all_results = {
         "results": {},
         "versions": {},
@@ -68,8 +65,8 @@ def main():
     for num_fewshots, task_list in tasks_per_fewshot.items():
         task_names = utils.pattern_match(task_list, tasks.ALL_TASKS)
         results = evaluator.simple_evaluate(
-            model=lm,
-            model_args=None,
+            model=args.model,
+            model_args=args.model_args,
             tasks=task_names,
             num_fewshot=num_fewshots,
             batch_size=args.batch_size,
