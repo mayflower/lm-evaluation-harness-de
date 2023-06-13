@@ -52,7 +52,7 @@ tasks_per_fewshot = {
         "pawsx_de",
         "xnli_de",
         "lambada_openai_mt_de",
-        "wmt20-en-de",
+        # "wmt20-en-de",
     ]
 }
 

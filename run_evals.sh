@@ -14,6 +14,5 @@ for model in $models;
 do
     # replace / with _ in model name
     model_escaped=${model//\//_}
-    echo "Evaluating $model. Writing to ${model_escaped}_all.json and log to ${model_escaped}_all.log"
-    srun -C gpu --gpus=1 --account laion ./eval/bin/python eval_de.py --model="hf-causal" --limit=50 --model_args="pretrained=${model},dtype=float16" --output_path="./${model_escaped}_all.json" --device="cuda" 2>&1 | tee "./${model_escaped}_all.log" &
+    echo tmux new-session -d -s "${model_escaped}" \'srun -C gpu --gpus=1 --account laion ./eval/bin/python eval_de.py --model="hf-causal" --model_args="pretrained=${model},dtype=float16" --output_path="./${model_escaped}_all.json" --device="cuda" 2>&1 | tee "./${model_escaped}_all.log"\'
 done
