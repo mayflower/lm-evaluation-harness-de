@@ -61,6 +61,9 @@ from . import pawsx
 from . import xnli
 from . import mgsm
 from . import hendrycks_test_de
+from . import hellaswag_de
+from . import truthfulqa_de
+from . import arc_de
 
 ########################################
 # Translation tasks
@@ -327,6 +330,9 @@ TASK_REGISTRY = {
     **pawsx.construct_tasks(),
     **xnli.construct_tasks(),
     **mgsm.construct_tasks(),
+    "hellaswag_de": hellaswag_de.HellaSwagDE,
+    "truthful_qa_de": truthfulqa_de.TruthfulQADEMultipleChoice,
+    "arc_challenge_de": arc_de.ARCChallengeDE,
 }
 
 
