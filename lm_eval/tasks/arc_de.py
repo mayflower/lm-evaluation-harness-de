@@ -29,6 +29,7 @@ _CITATION = """
 class ARCChallengeDE(MultipleChoiceTask):
     VERSION = 0
     DATASET_PATH = "bjoernp/arc_challenge_de"
+    DATASET_NAME = None
 
     def has_training_docs(self):
         return False
