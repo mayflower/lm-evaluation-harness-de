@@ -85,6 +85,66 @@ SUBJECTS = [
     "world_religions",
 ]
 
+SUBJECTS_DE = [
+    "Abstrakte_Algebra",
+    "Anatomie",
+    "Astronomie",
+    "Unternehmensethik",
+    "Klinisches_Wissen",
+    "Hochschulbiologie",
+    "Hochschulchemie",
+    "Hochschulinformatik",
+    "Hochschulmathematik",
+    "Hochschulmedizin",
+    "Hochschulphysik",
+    "Computersicherheit",
+    "Konzeptuelle_Physik",
+    "Ökonometrie",
+    "Elektrotechnik",
+    "Elementarmathematik",
+    "Formale_Logik",
+    "Globale_Fakten",
+    "Hochschulbiologie",
+    "Hochschulchemie",
+    "Hochschulinformatik",
+    "Europäische_Geschichte_in_der_Oberstufe",
+    "Geographie_in_der_Oberstufe",
+    "Regierung_und_Politik_in_der_Oberstufe",
+    "Makroökonomie_in_der_Oberstufe",
+    "Mathematik_in_der_Oberstufe",
+    "Mikroökonomie_in_der_Oberstufe",
+    "Physik_in_der_Oberstufe",
+    "Psychologie_in_der_Oberstufe",
+    "Statistik_in_der_Oberstufe",
+    "US-Geschichte_in_der_Oberstufe",
+    "Weltgeschichte_in_der_Oberstufe",
+    "Menschliches_Aaltern",
+    "Menschliche_Sexualität",
+    "Internationales_Recht",
+    "Rechtsphilosophie",
+    "Logische_Fehlschlüsse",
+    "Maschinelles_Lernen",
+    "Management",
+    "Marketing",
+    "Medizinische_Genetik",
+    "Verschiedenes",
+    "Moralische_Streitigkeiten",
+    "Moralische_Szenarien",
+    "Ernährung",
+    "Philosophie",
+    "Vorgeschichte",
+    "Berufliche_Buchhaltung",
+    "Berufliches_Recht",
+    "Berufliche_Medizin",
+    "Berufliche_Psychologie",
+    "Public_Relations",
+    "Sicherheitsstudien",
+    "Soziologie",
+    "US-Außenpolitik",
+    "Virologie",
+    "Weltreligionen",
+]
+
 
 def create_all_tasks():
     """Creates a dictionary of tasks from a list of subjects
@@ -103,7 +163,7 @@ def create_task(subject):
 
 
 class GeneralHendrycksTest(MultipleChoiceTask):
-    VERSION = 0
+    VERSION = 1
     DATASET_PATH = "bjoernp/mmlu_de"
     DATASET_NAME = None
 
@@ -125,6 +185,18 @@ class GeneralHendrycksTest(MultipleChoiceTask):
 
     def test_docs(self):
         return map(self._process_doc, self.dataset["test"])
+    
+    def _format_subject(self, subject):
+        index = SUBJECTS.index(subject)
+        subject = SUBJECTS_DE[index]
+        words = subject.split("_")
+        return " ".join(words)
+    
+    def fewshot_context(self, doc, num_fewshot, **kwargs):
+        subject = self.DATASET_NAME
+        description = f"Es folgen multiple-choice Fragen (mit Antworten) über das Thema {self._format_subject(subject)}."
+        kwargs["description"] = description
+        return super().fewshot_context(doc=doc, num_fewshot=num_fewshot, **kwargs)
 
     def _process_doc(self, doc):
         def format_example(doc, keys):
@@ -137,7 +209,7 @@ class GeneralHendrycksTest(MultipleChoiceTask):
             D. <choice4>
             Answer:
             """
-            prompt = "Frage: " + doc["question_de"] + "\nOptionen:\n"
+            prompt = "Frage: " + doc["question_de"].strip() + "\nOptionen:\n"
             prompt += "".join(
                 [f"{key}. {choice}\n" for key, choice in zip(keys, doc["choices_de"])]
             )
@@ -160,7 +232,9 @@ class GeneralHendrycksTest(MultipleChoiceTask):
         if self._fewshot_docs is None:
             self._fewshot_docs = list(map(self._process_doc, self.dataset["dev"]))
 
-        return rnd.sample(list(self._fewshot_docs), k)
+        # use the unchanged order of the dev set without sampling,
+        # just as in the original code https://github.com/hendrycks/test/blob/master/evaluate.py#L28
+        return self._fewshot_docs[:k]
 
     def doc_to_text(self, doc):
         return doc["query"]
