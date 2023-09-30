@@ -43,12 +43,15 @@ tasks_per_fewshot = {
     ],
     10: [
         "hellaswag",
+        "hellaswag_de"
     ],
     25: [
         "arc_challenge",
+        "arc_challenge_de"
     ],
     0: [
-        "truthfulqa",
+        "truthfulqa_mc",
+        "truthful_qa_de",
         "pawsx_de",
         "xnli_de",
         "lambada_openai_mt_de",
@@ -98,12 +101,14 @@ def main():
     mmlu_en_std_mean = np.mean([v["acc_stderr"] for k, v in all_results["results"].items() if "hendrycksTest" in k])
     all_results["results"]["MMLU-DE"] = {
         "acc": mmlu_de_mean,
-        "acc_stderr": mmlu_de_std_mean,
+        "acc_stderr": mmlu_de_std_mean
     }
+    all_results["versions"]["MMLU-DE"] = all_results["results"]["MMLU-DE-abstract_algebra"]["version"]    # choose one subject to get version
     all_results["results"]["hendrycksTest"] = {
         "acc": mmlu_en_mean,
         "acc_stderr": mmlu_en_std_mean,
     }
+    all_results["versions"]["hendrycksTest"] = all_results["results"]["hendrycksTest-abstract_algebra"]["version"]   # choose one subject to get version
 
     dumped = json.dumps(all_results, indent=2)
     print(dumped)
@@ -128,7 +133,7 @@ def main():
     else:
         columns = ["model", "model_args"] + list(all_results["results"].keys())
         df = pd.DataFrame(columns=columns)
-    df = df.append({
+    df = df._append({
         "model": args.model,
         "model_args": args.model_args,
         **{k: v["acc"] for k, v in all_results["results"].items()}
