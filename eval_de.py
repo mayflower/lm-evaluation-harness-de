@@ -103,12 +103,12 @@ def main():
         "acc": mmlu_de_mean,
         "acc_stderr": mmlu_de_std_mean
     }
-    all_results["versions"]["MMLU-DE"] = all_results["results"]["MMLU-DE-abstract_algebra"]["version"]    # choose one subject to get version
+    all_results["versions"]["MMLU-DE"] = all_results["versions"]["MMLU-DE-abstract_algebra"] # choose one subject to get version
     all_results["results"]["hendrycksTest"] = {
         "acc": mmlu_en_mean,
         "acc_stderr": mmlu_en_std_mean,
     }
-    all_results["versions"]["hendrycksTest"] = all_results["results"]["hendrycksTest-abstract_algebra"]["version"]   # choose one subject to get version
+    all_results["versions"]["hendrycksTest"] = all_results["versions"]["hendrycksTest-abstract_algebra"] # choose one subject to get version
 
     dumped = json.dumps(all_results, indent=2)
     print(dumped)
