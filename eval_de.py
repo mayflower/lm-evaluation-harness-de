@@ -131,13 +131,24 @@ def main():
     if os.path.exists(args.csv_path):
         df = pd.read_csv(args.csv_path)
     else:
-        columns = ["model", "model_args"] + list(all_results["results"].keys())
+        # metric can be acc, ppl, mc1, mc2, etc.
+        columns = ["model", "model_args", "metric"] + list(all_results["results"].keys())
         df = pd.DataFrame(columns=columns)
-    df = df._append({
-        "model": args.model,
-        "model_args": args.model_args,
-        **{k: v["acc"] for k, v in all_results["results"].items()}
-    }, ignore_index=True)
+
+    results = pd.DataFrame.from_dict(all_results["results"])
+    results['model'] = args.model
+    results['model_args'] = args.model_args
+    results['metric'] = results.index
+    results.reset_index(drop=True, inplace=True)
+    # reorder columns
+    cols = results.columns.tolist()
+    cols = cols[-3:] + cols[:-3]
+    results = results[cols]
+    # add current results to existing dataframe
+    df = pd.concat([df, results], ignore_index=True).reset_index(drop=True)
+    # remove duplicates, keeping the most recently added
+    df.drop_duplicates(subset=['model', 'model_args', 'metric'], keep='last', inplace=True)
+    # save to csv
     df.to_csv(args.csv_path, index=False)
 
 
