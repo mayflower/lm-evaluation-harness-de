@@ -103,12 +103,12 @@ def main():
         "acc": mmlu_de_mean,
         "acc_stderr": mmlu_de_std_mean
     }
-    all_results["versions"]["MMLU-DE"] = all_results["results"]["MMLU-DE-abstract_algebra"]["version"]    # choose one subject to get version
+    all_results["versions"]["MMLU-DE"] = all_results["versions"]["MMLU-DE-abstract_algebra"] # choose one subject to get version
     all_results["results"]["hendrycksTest"] = {
         "acc": mmlu_en_mean,
         "acc_stderr": mmlu_en_std_mean,
     }
-    all_results["versions"]["hendrycksTest"] = all_results["results"]["hendrycksTest-abstract_algebra"]["version"]   # choose one subject to get version
+    all_results["versions"]["hendrycksTest"] = all_results["versions"]["hendrycksTest-abstract_algebra"] # choose one subject to get version
 
     dumped = json.dumps(all_results, indent=2)
     print(dumped)
@@ -131,13 +131,24 @@ def main():
     if os.path.exists(args.csv_path):
         df = pd.read_csv(args.csv_path)
     else:
-        columns = ["model", "model_args"] + list(all_results["results"].keys())
+        # metric can be acc, ppl, mc1, mc2, etc.
+        columns = ["model", "model_args", "metric"] + list(all_results["results"].keys())
         df = pd.DataFrame(columns=columns)
-    df = df._append({
-        "model": args.model,
-        "model_args": args.model_args,
-        **{k: v["acc"] for k, v in all_results["results"].items()}
-    }, ignore_index=True)
+
+    results = pd.DataFrame.from_dict(all_results["results"])
+    results['model'] = args.model
+    results['model_args'] = args.model_args
+    results['metric'] = results.index
+    results.reset_index(drop=True, inplace=True)
+    # reorder columns
+    cols = results.columns.tolist()
+    cols = cols[-3:] + cols[:-3]
+    results = results[cols]
+    # add current results to existing dataframe
+    df = pd.concat([df, results], ignore_index=True).reset_index(drop=True)
+    # remove duplicates, keeping the most recently added
+    df.drop_duplicates(subset=['model', 'model_args', 'metric'], keep='last', inplace=True)
+    # save to csv
     df.to_csv(args.csv_path, index=False)
 
 
