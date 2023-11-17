@@ -164,7 +164,7 @@ def create_task(subject):
 
 class GeneralHendrycksTest(MultipleChoiceTask):
     VERSION = 1
-    DATASET_PATH = "bjoernp/mmlu_de"
+    DATASET_PATH = "LeoLM/MMLU_de"
     DATASET_NAME = None
 
     def __init__(self, subject):
