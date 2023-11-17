@@ -57,7 +57,7 @@ QA_PROMPT = (
 
 class TruthfulQADEMultipleChoice(Task):
     VERSION = 0
-    DATASET_PATH = "bjoernp/truthful_qa_de"
+    DATASET_PATH = "LeoLM/TruthfulQA_de"
     DATASET_NAME = None
 
     def has_training_docs(self):
