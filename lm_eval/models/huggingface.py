@@ -303,6 +303,7 @@ class HuggingFaceAutoLM(BaseLM):
                 revision=revision + ("/" + subfolder if subfolder is not None else ""),
                 low_cpu_mem_usage=low_cpu_mem_usage,
                 device_map=device_map,
+                attn_implementation="flash_attention_2",
                 max_memory=max_memory,
                 offload_folder=offload_folder,
                 load_in_8bit=load_in_8bit,
@@ -320,6 +321,7 @@ class HuggingFaceAutoLM(BaseLM):
                 trust_remote_code=trust_remote_code,
                 use_safetensors=True if quantized == True else quantized.endswith('.safetensors'),
                 use_triton=gptq_use_triton,
+                attn_implementation="flash_attention_2",
                 warmup_triton=gptq_use_triton,
             )
         return model
